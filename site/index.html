@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Market data platform: status</title>
+<meta name="description" content="Status of a small lakehouse that ingests nine public market and macro datasets through bronze, silver and gold layers.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f6f7f9;--surface:#fff;--ink:#15202b;--soft:#5b6677;--rule:#dce1e7;--ok:#2b7a4b;--warn:#b7791f;--block:#b3263e;--line:#2f4b7c;--line2:#b7791f;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--paper:#10151c;--surface:#171e27;--ink:#e6ebf1;--soft:#98a3b3;--rule:#2a3442;--ok:#5cbf86;--warn:#e0a948;--block:#ec7287;--line:#86a7e0;--line2:#e0a948;color-scheme:dark}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "IBM Plex Sans","Helvetica Neue",Arial,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:40px clamp(16px,3vw,36px) 64px}
+h1{font-size:clamp(1.8rem,4vw,2.5rem);margin:0;line-height:1.1}
+h2{font-size:1.3rem;margin:0 0 10px}
+.soft{color:var(--soft)}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.88em}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:12px 24px;padding-bottom:18px;border-bottom:2px solid var(--ink)}
+.pill{display:inline-flex;align-items:center;gap:8px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--rule)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.ok{background:var(--ok)}.warn{background:var(--warn)}.block{background:var(--block)}
+section{margin-top:40px}
+.lede{max-width:72ch;margin:14px 0 0}
+.alerts{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.alerts li{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--warn);border-radius:6px;padding:10px 14px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+thead th{font-size:.82rem;color:var(--soft);font-weight:600}
+.num{text-align:right;white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+svg{width:100%;height:auto;display:block}
+.axis{fill:var(--soft);font-size:11px;font-family:inherit}
+.gridline{stroke:var(--rule)}
+.series{fill:none;stroke:var(--line);stroke-width:2}
+.series2{fill:none;stroke:var(--line2);stroke-width:2}
+.label{fill:var(--ink);font-size:11px;font-weight:600}
+.node rect{fill:var(--surface);stroke:var(--rule)}
+.node text{fill:var(--ink);font-size:11px;font-family:"IBM Plex Mono",ui-monospace,monospace}
+.edge{stroke:var(--rule);fill:none;stroke-width:1.5}
+.layer{fill:var(--soft);font-size:11px;font-weight:600;letter-spacing:.04em}
+.foot{margin-top:48px;padding-top:14px;border-top:1px solid var(--rule);font-size:.9rem;color:var(--soft)}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><p class="soft" style="margin:0 0 4px;font-weight:600">Market data platform</p><h1>Pipeline status</h1></div>
+  <div id="runpill"></div>
+</header>
+<p class="lede">Nine public market and macro datasets, loaded incrementally through bronze (raw, immutable), silver (typed, contract-checked) and gold (ready to query). Everything on this page is the platform's own metadata from its latest run.</p>
+
+<section><h2>Needs attention</h2><ul class="alerts" id="alerts"></ul></section>
+
+<section><h2>Lineage</h2><div class="card"><svg id="lineage" viewBox="0 0 900 330" role="img" aria-label="Sources flow into silver tables and gold tables"></svg></div></section>
+
+<section><h2>Sources</h2><div class="scroll"><table id="sources"></table></div>
+<p class="soft" style="margin-top:8px">Quarantined rows broke the contract and were held back with a reason. Repaired rows were kept with one bad field blanked, such as a VIX open outside that day's high-low range.</p></section>
+
+<section class="grid2">
+  <div class="card"><h2>What the gold tables can answer</h2><p class="soft" style="margin:0 0 8px">Shiller CAPE, computed in <code>macro_monthly</code> from price, earnings and CPI.</p><svg id="cape" viewBox="0 0 520 240" role="img" aria-label="CAPE ratio over time"></svg></div>
+  <div class="card"><h2>Fear and oil since 1990</h2><p class="soft" style="margin:0 0 8px">VIX and Brent crude, quarterly averages from <code>market_daily</code>.</p><svg id="market" viewBox="0 0 520 240" role="img" aria-label="VIX and Brent over time"></svg></div>
+</section>
+
+<section><h2>Recent runs</h2><div class="scroll"><table id="runs"></table></div></section>
+
+<footer class="foot">Sources: Datahub public datasets on GitHub (Open Data Commons PDDL): CBOE VIX, EIA Brent, WTI and Henry Hub prices, BLS CPI, gold prices, 10-year Treasury yields, Robert Shiller's S&amp;P 500 data, and S&amp;P 500 constituents. Code, contracts and tests are in the repository.</footer>
+</main>
+<script type="module">
+const d = await fetch("status.json").then(r => r.json());
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const n = v => v.toLocaleString("en-US");
+const state = s => s.failed.length ? "warn" : "ok";
+
+document.getElementById("runpill").innerHTML = `<span class="pill"><span class="dot ${d.run.status === "ok" ? "ok" : "warn"}"></span>Last run ${esc(d.run.status)} · ${(d.run.ms / 1000).toFixed(1)} s · ${esc(d.generated)}</span>`;
+
+const alerts = d.sources.flatMap(s => s.failed.map(f => `<li><span class="mono">${esc(s.name)}</span> · <strong>${esc(f.check.replace("column_fresh:", "column stopped updating: "))}</strong><br><span class="soft">${esc(f.detail)}</span></li>`));
+document.getElementById("alerts").innerHTML = alerts.length ? alerts.join("") : `<li style="border-left-color:var(--ok)">Every check passed.</li>`;
+
+document.getElementById("sources").innerHTML = `<thead><tr><th></th><th>Source</th><th>Grain</th><th class="num">Rows</th><th>Latest</th><th class="num">Quarantined</th><th class="num">Repaired</th><th class="num">Checks passed</th></tr></thead><tbody>` +
+  d.sources.map(s => `<tr><td><span class="dot ${state(s)}"></span></td><td><span class="mono">${esc(s.name)}</span><div class="soft" style="font-size:.85rem">${esc(s.description)}</div></td><td>${s.grain}</td><td class="num">${n(s.rows)}</td><td class="mono" style="white-space:nowrap">${s.latest ?? "snapshot"}</td><td class="num">${s.quarantined}</td><td class="num">${s.repaired}</td><td class="num">${s.checks - s.failed.length} / ${s.checks}</td></tr>`).join("") + "</tbody>";
+
+// lineage: sources -> silver -> gold
+(() => {
+  const svg = document.getElementById("lineage"), H = 330, rowH = (H - 40) / d.sources.length;
+  const srcY = i => 30 + i * rowH, goldY = i => 60 + i * 95;
+  let out = `<text class="layer" x="10" y="16">SOURCE</text><text class="layer" x="330" y="16">SILVER</text><text class="layer" x="660" y="16">GOLD</text>`;
+  d.gold.forEach((g, gi) => g.inputs.forEach(inp => { const i = d.sources.findIndex(s => s.name === inp);
+    out += `<path class="edge" d="M560,${srcY(i) + 11} C610,${srcY(i) + 11} 610,${goldY(gi) + 16} 660,${goldY(gi) + 16}"/>`; }));
+  d.sources.forEach((s, i) => {
+    out += `<path class="edge" d="M210,${srcY(i) + 11} L330,${srcY(i) + 11}"/>`;
+    out += `<g class="node"><rect x="10" y="${srcY(i)}" width="200" height="22" rx="4"/><text x="20" y="${srcY(i) + 15}">${esc(s.name)}</text></g>`;
+    out += `<g class="node"><rect x="330" y="${srcY(i)}" width="230" height="22" rx="4"/><circle cx="345" cy="${srcY(i) + 11}" r="4" class="${state(s)}" style="fill:var(--${state(s)})"/><text x="356" y="${srcY(i) + 15}">${esc(s.name)} · ${n(s.rows)}</text></g>`;
+  });
+  d.gold.forEach((g, gi) => { out += `<g class="node"><rect x="660" y="${goldY(gi)}" width="230" height="32" rx="4"/><text x="672" y="${goldY(gi) + 20}">${esc(g.name)} · ${n(g.rows)} rows</text></g>`; });
+  svg.innerHTML = out;
+})();
+
+function line(svgId, series, opts) {
+  const svg = document.getElementById(svgId), W = 520, H = 240, L = 40, R = opts.right ? 40 : 12, T = 12, B = 26;
+  const xs = series[0].pts.map(p => p.x), x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const X = v => L + (W - L - R) * (v - x0) / (x1 - x0);
+  let out = "";
+  series.forEach((s, si) => {
+    const vals = s.pts.map(p => p.y).filter(v => v != null), hi = Math.max(...vals) * 1.08;
+    const Y = v => T + (H - T - B) * (1 - v / hi);
+    if (si === 0) [0, .5, 1].forEach(f => out += `<line class="gridline" x1="${L}" x2="${W - R}" y1="${Y(hi * f / 1.08)}" y2="${Y(hi * f / 1.08)}"/><text class="axis" x="${L - 6}" y="${Y(hi * f / 1.08) + 4}" text-anchor="end">${Math.round(hi * f / 1.08)}</text>`);
+    else out += `<text class="axis" x="${W - R + 6}" y="${Y(Math.max(...vals)) + 4}">${Math.round(Math.max(...vals))}</text>`;
+    let dpath = "", pen = false;
+    s.pts.forEach(p => { if (p.y == null) { pen = false; return; } dpath += `${pen ? "L" : "M"}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`; pen = true; });
+    out += `<path class="${si ? "series2" : "series"}" d="${dpath}"/>`;
+    (s.marks || []).forEach(m => { const p = s.pts.find(q => q.x === m.x); if (p) out += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3" fill="var(--ink)"/><text class="label" x="${X(p.x)}" y="${Y(p.y) - 8}" text-anchor="middle">${m.t}</text>`; });
+  });
+  opts.ticks.forEach(t => out += `<text class="axis" x="${X(t)}" y="${H - 8}" text-anchor="middle">${t}</text>`);
+  if (opts.legend) out += opts.legend;
+  svg.innerHTML = out;
+}
+line("cape", [{ pts: d.cape.map(c => ({ x: c.y, y: c.v })), marks: [{ x: 1929, t: "1929" }, { x: 1999, t: "1999" }, { x: 2021, t: "2021" }] }], { ticks: [1890, 1930, 1970, 2010] });
+const q = d.market.map((m, i) => ({ i, m }));
+const yearOf = s => +s.slice(0, 4) + (+s.slice(5) - 1) / 4;
+line("market", [{ pts: d.market.map(m => ({ x: yearOf(m.m), y: m.vix })) }, { pts: d.market.map(m => ({ x: yearOf(m.m), y: m.brent })) }],
+  { right: true, ticks: [1990, 2000, 2010, 2020], legend: `<text class="axis" x="48" y="24" style="fill:var(--line)">VIX (left)</text><text class="axis" x="120" y="24" style="fill:var(--line2)">Brent $/bbl (right)</text>` });
+
+document.getElementById("runs").innerHTML = `<thead><tr><th>Run</th><th>Status</th><th>Started</th><th class="num">Duration</th></tr></thead><tbody>` +
+  d.history.map(h => `<tr><td class="mono">${esc(h.id)}</td><td><span class="dot ${h.status === "ok" ? "ok" : "warn"}"></span> ${esc(h.status)}</td><td class="mono">${esc(h.at.replace("T", " "))}</td><td class="num">${(h.ms / 1000).toFixed(1)} s</td></tr>`).join("") + "</tbody>";
+</script>
+</body>
+</html>

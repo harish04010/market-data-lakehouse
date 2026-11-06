@@ -1,0 +1,5 @@
+duckdb==1.1.3
+pandas>=2.2
+pytest>=8
+# Optional: the Spark implementation of market_daily and its parity test (needs Java 17+).
+pyspark==4.0.1
